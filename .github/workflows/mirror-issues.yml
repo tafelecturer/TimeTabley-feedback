@@ -1,0 +1,92 @@
+name: Mirror issues to private repo
+
+on:
+  issues:
+    types: [opened, edited, reopened, labeled, unlabeled]
+
+permissions:
+  issues: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror to private repo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          script: |
+            const srcIssue = context.payload.issue;
+            const srcRepo = context.repo.repo;
+            const srcOwner = context.repo.owner;
+
+            const TARGET_OWNER = process.env.TARGET_OWNER || srcOwner;
+            const TARGET_REPO  = process.env.TARGET_REPO  || 'yourapp-private'; // <- change if you didn't set secret
+
+            // Compose title/body
+            const mirrorTitle = `[Public#${srcIssue.number}] ${srcIssue.title}`;
+            const fields = [
+              `**Public issue:** https://github.com/${srcOwner}/${srcRepo}/issues/${srcIssue.number}`,
+              `**Author:** @${srcIssue.user.login}`,
+              `**Labels:** ${srcIssue.labels.map(l => typeof l === 'string' ? l : l.name).join(', ') || '(none)'}`,
+              `---`,
+              srcIssue.body || '(no body)'
+            ].join('\n\n');
+
+            // Try to find an existing private issue with this public number
+            const { data: search } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${TARGET_OWNER}/${TARGET_REPO} "${`[Public#${srcIssue.number}]`}" in:title is:issue`
+            });
+
+            if (search.items.length > 0) {
+              const existing = search.items[0];
+              await github.rest.issues.update({
+                owner: TARGET_OWNER,
+                repo: TARGET_REPO,
+                issue_number: existing.number,
+                title: mirrorTitle,
+                body: fields
+              });
+
+              // Sync labels (best-effort)
+              const labels = srcIssue.labels.map(l => typeof l === 'string' ? l : l.name);
+              try {
+                await github.rest.issues.setLabels({
+                  owner: TARGET_OWNER,
+                  repo: TARGET_REPO,
+                  issue_number: existing.number,
+                  labels: ['from-public', ...labels]
+                });
+              } catch (e) {
+                // Ignore if some labels don't exist in private repo
+                console.log('Label sync skipped or partial:', e.message);
+              }
+            } else {
+              // Create a new private issue
+              await github.rest.issues.create({
+                owner: TARGET_OWNER,
+                repo: TARGET_REPO,
+                title: mirrorTitle,
+                body: fields,
+                labels: ['from-public', ...(srcIssue.labels.map(l => typeof l === 'string' ? l : l.name))]
+              });
+            }
+
+      - name: (Optional) Acknowledge in public
+        if: ${{ github.event.action == 'opened' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue_number = context.payload.issue.number;
+            const body = [
+              "Thanks for the report! We've received it and are tracking it internally. 🛠️",
+              "",
+              "_Note: We keep development issues private during alpha. We'll update here if we need more details._"
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body
+            });
