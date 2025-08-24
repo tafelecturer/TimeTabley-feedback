@@ -21,7 +21,7 @@ jobs:
             const srcOwner = context.repo.owner;
 
             const TARGET_OWNER = process.env.TARGET_OWNER || srcOwner;
-            const TARGET_REPO  = process.env.TARGET_REPO  || 'yourapp-private'; // <- change if you didn't set secret
+            const TARGET_REPO  = process.env.TARGET_REPO  || 'TimeTabley'; // <- change if you didn't set secret
 
             // Compose title/body
             const mirrorTitle = `[Public#${srcIssue.number}] ${srcIssue.title}`;
