@@ -1,0 +1,66 @@
+name: Bug report
+description: Tell us what broke so we can fix it fast
+labels: [bug, needs-triage]
+title: "[Bug] <short summary>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please fill out the fields below. Incomplete reports slow us down 😅
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - S1 - Blocking (crash / can’t use feature)
+        - S2 - Major (work-around exists)
+        - S3 - Minor (cosmetic / typo)
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version or build number
+      description: Shown in the app’s footer/about dialog
+      placeholder: e.g., 0.7.3 (build 109)
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Page / screen / URL
+      placeholder: e.g., /schedule, /settings/rooms
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: Prod / Staging / Dev
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps please
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See error …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result / error message
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / OS
+      placeholder: e.g., Chrome 119 on Windows 11
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra info (screenshots, console snippets)
+      description: Drag-and-drop images or paste logs here
